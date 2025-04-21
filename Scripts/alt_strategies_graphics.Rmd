@@ -1,0 +1,113 @@
+---
+title: "Alternative Strategies graphics"
+author: "Kelly Mistry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(reshape2)
+library(ggplot2)
+library(dplyr)
+library(here)
+library(tictoc)
+library(fdrtool)
+library(jagsUI)
+library(scales)
+library(vctrs)
+
+source(here("Scripts/00_user_inputs.R"))
+
+# Setting folder to save plots to
+save_folder <- paste0(here("Results/alt_strategies/Manuscript_plots"), "/")
+
+strategies <- paste0("strategy_", 1:4)
+num_strategies <- length(strategies)
+
+plot_labels <- list()
+plot_labels$size_class <- c("small" = "Small",
+                            "medium" = "Medium",
+                            "large" = "Large",
+                            "xlarge" = "X-large")
+plot_labels$method <- c("ADS" = "ADS",
+                        "visual" = "Visual survey",
+                        "trap" = "Live traps",
+                        "bait_tube" = "Bait tubes")
+plot_labels$type_of_N <- c("small" = "Small", 
+                           "medium" = "Medium", 
+                           "large" = "Large", 
+                           "xlarge" = "X-large", 
+                           "total" = "Total")
+plot_labels$strategy <- c("ADS only",
+                          "all methods",
+                          "ADS plus monitoring",
+                          "ground-based methods")
+names(plot_labels$strategy) <- strategies
+
+colors <- list()
+colors$methods <- c(hue_pal()(4)[c(1, 4, 3, 2)])
+names(colors$methods) <- erad_methods
+
+```
+
+
+# Graphics & tables for all alternative strategies
+
+
+```{r strategy_effort_plots} 
+
+strategy_effort_plots <- list()
+for(strategy in strategies) {
+  source(paste0(here("Scripts/"), strategy, "_set_up.R"))
+  #method_options <- strategy_methods[[strategy]]
+  strategy_effort_plots[[strategy]] <- list()
+  for(condition in 1:length(method_options)) {
+    # Dataframe with days, weeks, quarters, for each method
+    # Check for empty elements in method_options condition list
+    empty_quarters <- vector()
+    for(quarter in 1:length(method_options[[condition]]$erad_days)) {
+      if(length(method_options[[condition]]$erad_days[[quarter]]) == 0) {
+        method_options[[condition]]$erad_days[[quarter]]$visual <- 0
+      }
+    }
+    if(strategy != strategies[1]) {
+      effort_df <- melt(method_options[[condition]]$erad_days)
+    } else {
+      effort_df <- melt(method_options[[1]]$erad_days$quarter_1)
+      effort_df$Quarter <- "quarter_1"
+    }
+    colnames(effort_df) <- c("day", "method", "Quarter")
+    # Renaming quarter values
+    effort_df$Quarter <- gsub("quarter_", "Quarter ", effort_df$Quarter)
+    # Adding weeks
+    effort_df$week <- ceiling(effort_df$day/7)
+    
+    effort_plot <- ggplot(effort_df, aes(fill = method, x = week)) +
+      geom_bar(stat = "count", position = "dodge") +
+      facet_grid(vars(Quarter)) +
+      scale_fill_manual(values = colors$methods, labels = plot_labels$method) +
+      scale_x_continuous(breaks = c(0:13), labels = c(0:13), 
+                         limits = c(0, 13)) +
+      scale_y_continuous(breaks = c(0:7), labels = c(0:7), 
+                         limits = c(0, 8)) +
+      labs(y = "Number of Days per Week", fill = "Method", x = "Week",
+           title = paste0(plot_labels$strategy[strategy], " strategy under ", 
+                          names(method_options)[condition], " conditions")) +
+      theme_bw() +
+      theme(panel.grid.minor = element_blank())
+    
+    # Saving above plot to list for all strategies
+    strategy_effort_plots[[strategy]][[condition]] <- effort_plot
+    # Saving plot to folder
+    ggsave(filename = paste0(save_folder, strategy, "_", names(method_options)[condition], "_methods_plot.png"), effort_plot, device = 'png', width = 6, height = 4)
+  }
+  names(strategy_effort_plots[[strategy]]) <- names(method_options)
+}
+
+
+
+
+
+```
+
