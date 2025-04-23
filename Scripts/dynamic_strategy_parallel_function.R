@@ -155,7 +155,8 @@ parallel_fun <- function(P,
     
     ## Testing to see if any thresholds are met
     mean_N_df <- est_v_sim_N_plots$mean_N_df
-    condition <- do.call(threshold_fun, args = list(mean_N_df))
+    #condition <- do.call(threshold_fun, args = list(mean_N_df))
+    condition <- threshold_fun(mean_N_df)
     print(condition)
     # Advancing counter by the number of quarters that have been estimated
     t <- t+1
@@ -184,7 +185,6 @@ parallel_fun <- function(P,
 # test_output_jags <- readRDS(file = here("Results", "alt_strategies", "Strategy_two", "Estimation",
 #                                          paste0("output_jags_paralell_test_variant-",1, "_est_", 2, ".RDS")))
 # 
-
 
 
 
