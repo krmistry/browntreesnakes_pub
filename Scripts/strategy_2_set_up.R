@@ -1,8 +1,8 @@
 ## Strategy 2 set up
 
 ### Manually set IBM parameters
-# Number of quarters to generate - 10 years
-erad_quarter_time_step <- 2
+# # Number of quarters to generate - 10 years
+# erad_quarter_time_step <- 4
 
 # Methods for all evenatualities; starting, threshold 1, threshold 2 and threshold 3
 method_option_names <- c("initial", paste0("threshold_", c(1:2)))

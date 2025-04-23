@@ -8,10 +8,13 @@ recreate_IBM_all_quarters <- function(strategy_name,
                                       variant) {
   IBM_list <- list()
   for(y in 1:total_time_steps[variant]) {
-    IBM_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], "/variant_",
-                                 variant, "/IBM_results_start_pop_", permutation_name, "_variant-",
-                                 variant,"_IBM_set-",
-                                 y, ".rds"))
+    # IBM_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], "/variant_",
+    #                              variant, "/IBM_results_start_pop_", permutation_name, "_variant-",
+    #                              variant,"_IBM_set-",
+    #                              y, ".rds"))
+    IBM_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], "/IBM_", 
+                                 names(starting_pop)[P], "_", names(starting_size_dist)[D], 
+                                 "-var_", variant, "-set_", y, ".rds"))
     IBM_list <- c(IBM_list, IBM_output[[y]]$quarter_timeseries[-erad_quarter_time_step+1])
     IBM_all_quarters <- melt(IBM_list, id.vars = colnames(IBM_output[[1]]$quarter_timeseries[[1]]))
     colnames(IBM_all_quarters)[6] <- "Quarter"

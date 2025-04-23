@@ -1,8 +1,8 @@
 
 
 ### Manually set IBM parameters
-# Number of quarters to generate between estimation rounds - 1 year at a time
-erad_quarter_time_step <- 4
+# # Number of quarters to generate between estimation rounds - 1 year at a time
+# erad_quarter_time_step <- 4
 
 # Methods for all evenatualities; starting, threshold 1, threshold 2 and threshold 3
 method_option_names <- c("initial", "threshold_1")

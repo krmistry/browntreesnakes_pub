@@ -14,11 +14,13 @@ source(here("Scripts/00_user_inputs.R"))
 source(here("Scripts/01_model_functions.R"))
 source(here("Scripts/02_results_functions.R"))
 source(here("Scripts/estimation_model_functions.R"))
+source(here("Scripts/IBM_threshold_funs.R"))
 
 ##### Shared parameters 
 # Number of variants for each permutation
 num_variants <- 50
-
+# Time step for estimation (once per year)
+erad_quarter_time_step <- 4
 # Target area
 area_size <- 50
 # Carrying capacity
@@ -76,7 +78,7 @@ for(strategy in strategies) {
       results_folders[[strategy]][[P]][[D]] <- vector()
       permutation_name <- paste0(P, "_", D)
       for(result in types_of_results) {
-        folder_name <- paste0(save_folder, strategy, "/", permutation_name, "/", result)
+        folder_name <- paste0(save_folder, "/", strategy, "/", permutation_name, "/", result)
         if(!dir.exists(folder_name)) {
           dir.create(folder_name, recursive = TRUE)
         }
