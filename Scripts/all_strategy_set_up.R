@@ -21,6 +21,8 @@ source(here("Scripts/IBM_threshold_funs.R"))
 num_variants <- 50
 # Time step for estimation (once per year)
 erad_quarter_time_step <- 4
+# Number of estimation periods (years)
+final_time_step <- 10
 # Target area
 area_size <- 50
 # Carrying capacity
@@ -65,28 +67,50 @@ static_strategies <- strategies[1]
 dynamic_strategies <- strategies[-1]
 
 
-# Creating directory of folders (actually create the folders if they don't exist, 
-# otherwise just creating an indexed list of the names for file reading and saving)
-types_of_results <- c("IBM", "Estimation", "Processed_results")
-save_folder <- here("Results/")
-results_folders <- list()
-for(strategy in strategies) {
-  results_folders[[strategy]] <- list()
-  for(P in names(starting_pop)) {
-    results_folders[[strategy]][[P]] <- list()
-    for(D in names(starting_size_dist)) {
-      results_folders[[strategy]][[P]][[D]] <- vector()
-      permutation_name <- paste0(P, "_", D)
-      for(result in types_of_results) {
-        folder_name <- paste0(save_folder, "/", strategy, "/", permutation_name, "/", result)
-        if(!dir.exists(folder_name)) {
-          dir.create(folder_name, recursive = TRUE)
+# Function to creating directory of folders (actually create the folders if they don't exist, 
+# otherwise just creating an indexed list of the names for file reading and saving) - needs to be a function
+# in case saving to an external harddrive is necessary 
+results_folder_fun <- function(save_folder,
+                               strategy_list = strategies,
+                               start_pop = starting_pop,
+                               start_size = starting_size_dist,
+                               n_variants = num_variants) {
+  types_of_results <- c("IBM", "Estimation", "Processed_results")
+  results_folders <- list()
+  for(strategy in strategy_list) {
+    results_folders[[strategy]] <- list()
+    for(P in names(start_pop)) {
+      results_folders[[strategy]][[P]] <- list()
+      for(D in names(start_size)) {
+        results_folders[[strategy]][[P]][[D]] <- list()
+        permutation_name <- paste0(P, "_", D)
+        for(result in types_of_results) {
+          if(result %in% types_of_results[c(1:2)]) {
+            results_folders[[strategy]][[P]][[D]][[result]] <- vector() 
+            for(variant in 1:n_variants) {
+              variant_name <- paste0("variant_", variant)
+              
+              folder_name <- paste0(save_folder, "/", strategy, "/", permutation_name, "/", result, "/",
+                                    variant_name)
+              if(!dir.exists(folder_name)) {
+                dir.create(folder_name, recursive = TRUE)
+              }
+              results_folders[[strategy]][[P]][[D]][[result]][variant] <- folder_name
+            }
+          } else {
+            folder_name <- paste0(save_folder, "/", strategy, "/", permutation_name, "/", result)
+            if(!dir.exists(folder_name)) {
+              dir.create(folder_name, recursive = TRUE)
+            }
+            results_folders[[strategy]][[P]][[D]][[result]] <- folder_name
+          }
         }
-        results_folders[[strategy]][[P]][[D]][result] <- folder_name
       }
     }
   }
+  return(results_folders)
 }
+
 
 # File names for which set of jags output to save
 estimation_sets_to_save <- list("Strategy_two" = c(1:5, 10, 15),
