@@ -42,7 +42,7 @@ parallel_fun <- function(P,
       # Identifying methods condition 
       new_methods <- method_options[[condition]]
       # Isolating population from final time step to make the new initial population
-      last_quarter_df <- IBM_results[[t-1]]$quarter_timeseries[[erad_quarter_time_step+1]]
+      last_quarter_df <- IBM_results[[t-1]]$quarter_timeseries[[quarter_time_step+1]]
       # Setting parameter to run IBM with existing population
       run_type <- "continuing"
     } 
@@ -67,7 +67,7 @@ parallel_fun <- function(P,
                                            initial_size_dist = size_dist, 
                                            p_g = g_density_prob,
                                            lambda = lambda,
-                                           total_quarters = erad_quarter_time_step,
+                                           total_quarters = quarter_time_step,
                                            total_days = day_time_step,
                                            erad = "on",
                                            erad_method =  methods,
@@ -85,7 +85,7 @@ parallel_fun <- function(P,
     IBM_observed_results[[t]] <- IBM_results[[t]]$all_observed
     IBM_effort_results[[t]] <- IBM_results[[t]]$all_effort
     # Correcting the quarters in the IBM that just ran if t > 1, after removing the final quarter (which is just the starting values)
-    IBM_results[[t]]$all_quarters <- IBM_results[[t]]$all_quarters[IBM_results[[t]]$all_quarters$Quarter %in% c(1:erad_quarter_time_step),]
+    IBM_results[[t]]$all_quarters <- IBM_results[[t]]$all_quarters[IBM_results[[t]]$all_quarters$Quarter %in% c(1:quarter_time_step),]
     if(quarter_time_step == 2) {
       IBM_results[[t]]$all_quarters$Quarter[IBM_results[[t]]$all_quarters$Quarter == 1] <- t*2 - 1
       IBM_results[[t]]$all_quarters$Quarter[IBM_results[[t]]$all_quarters$Quarter == 2] <- t*2 
@@ -98,8 +98,8 @@ parallel_fun <- function(P,
     }
     
     # Save IBM results from this run
-    saveRDS(IBM_results, file = paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], "/IBM_", 
-                                      names(starting_pop)[P], "_", names(starting_size_dist)[D], 
+    saveRDS(IBM_results, file = paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant], "/IBM_",
+                                      names(starting_pop)[P], "_", names(starting_size_dist)[D],
                                       "-var_", variant, "-set_", t, ".rds"))
     
     # Saving all IBM quarter results
@@ -114,6 +114,19 @@ parallel_fun <- function(P,
       } 
       combined_effort[[quarter]]$quarter <- quarter
     }
+    
+    # Check that eradication effort actually occurred (if the population was eradicated through natural 
+    # mortality before the first eradication effort day, then it may not have) - if it hasn't, then save 
+    # the all_quarters and effort records and end the model run
+    if(length(combined_effort) == 1 & is.null(nrow(combined_effort[[1]])) == TRUE) {
+      saveRDS(estimation_effort_record, file = paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant], "/effort_record_", 
+                                                      names(starting_pop)[P], "_", names(starting_size_dist)[D], 
+                                                      "-var_", variant, ".rds"))
+      saveRDS(IBM_all_quarters, file = paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant], "/IBM_all_quarters_", 
+                                              names(starting_pop)[P], "_", names(starting_size_dist)[D], 
+                                              "-var_", variant, ".rds"))
+      break
+    }
 
     # Estimation model set up
     estimation_inputs <- estimation_inputs_fun(observed_list = combined_observed,
@@ -127,21 +140,23 @@ parallel_fun <- function(P,
                         n.thin = nt,
                         n.iter = ni,
                         n.burnin = nb)
+    # If the population is eradicated (but at least some eradication effor occurred), then save everything and 
+    # end model run
     if(length(IBM_results[[t]]$all_quarters) < quarter_time_step+1) {
-      saveRDS(output_jags, file = paste0(results_folders[[strategy_name]][[P]][[D]]["Estimation"], "/jags_output_", 
+      saveRDS(output_jags, file = paste0(results_folders[[strategy_name]][[P]][[D]][["Estimation"]][variant], "/jags_output_", 
                                         names(starting_pop)[P], "_", names(starting_size_dist)[D], 
                                         "-var_", variant, "-set_", t, ".rds"))
-      saveRDS(estimation_effort_record, file = paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], "/effort_record_", 
+      saveRDS(estimation_effort_record, file = paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant], "/effort_record_", 
                                         names(starting_pop)[P], "_", names(starting_size_dist)[D], 
                                         "-var_", variant, ".rds"))
-      saveRDS(IBM_all_quarters, file = paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], "/IBM_all_quarters_", 
+      saveRDS(IBM_all_quarters, file = paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant], "/IBM_all_quarters_", 
                                         names(starting_pop)[P], "_", names(starting_size_dist)[D], 
                                         "-var_", variant, ".rds"))
       break
     }
     
-    if(t %in% c(1:5, 10, 15, 20)) {
-      saveRDS(output_jags, file = paste0(results_folders[[strategy_name]][[P]][[D]]["Estimation"], "/jags_output_", 
+    if(t %in% c(1:5, 10)) {
+      saveRDS(output_jags, file = paste0(results_folders[[strategy_name]][[P]][[D]][["Estimation"]][variant], "/jags_output_", 
                                          names(starting_pop)[P], "_", names(starting_size_dist)[D], 
                                          "-var_", variant, "-set_", t, ".rds"))
     }
@@ -161,11 +176,11 @@ parallel_fun <- function(P,
     # Advancing counter by the number of quarters that have been estimated
     t <- t+1
   }
-  # Saving effort record and the IBM all_quarters data frame from the entire time period
-  saveRDS(estimation_effort_record, file = paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], "/effort_record_", 
+  # Saving effort record and the IBM all_quarters data frame from the entire time period (if the population isn't eradicated)
+  saveRDS(estimation_effort_record, file = paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant], "/effort_record_", 
                                                   names(starting_pop)[P], "_", names(starting_size_dist)[D], 
                                                   "-var_", variant, ".rds"))
-  saveRDS(IBM_all_quarters, file = paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], "/IBM_all_quarters_", 
+  saveRDS(IBM_all_quarters, file = paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant], "/IBM_all_quarters_", 
                                           names(starting_pop)[P], "_", names(starting_size_dist)[D], 
                                           "-var_", variant, ".rds"))
   
