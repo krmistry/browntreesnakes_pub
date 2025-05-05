@@ -12,9 +12,8 @@ recreate_IBM_all_quarters <- function(strategy_name,
     #                              variant, "/IBM_results_start_pop_", permutation_name, "_variant-",
     #                              variant,"_IBM_set-",
     #                              y, ".rds"))
-    IBM_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], "/IBM_", 
-                                 names(starting_pop)[P], "_", names(starting_size_dist)[D], 
-                                 "-var_", variant, "-set_", y, ".rds"))
+    IBM_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant], "/IBM_", 
+                                 P, "_", D, "-var_", variant, "-set_", y, ".rds"))
     IBM_list <- c(IBM_list, IBM_output[[y]]$quarter_timeseries[-erad_quarter_time_step+1])
     IBM_all_quarters <- melt(IBM_list, id.vars = colnames(IBM_output[[1]]$quarter_timeseries[[1]]))
     colnames(IBM_all_quarters)[6] <- "Quarter"
@@ -36,13 +35,11 @@ recreate_IBM_effort_list <- function(strategy_name,
   #all_obs_quarters) {
   IBM_effort_list <- list()
   for(y in 1:total_time_steps[variant]) {
-    IBM_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], "/variant_",
-                                 variant, "/IBM_results_start_pop_", permutation_name, "_variant-",
-                                 variant,"_IBM_set-",
-                                 y, ".rds"))
+    IBM_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant], 
+                                 "/IBM_", permutation_name, "-var_", variant,"-set_", y, ".rds"))
     IBM_effort_list[[y]] <- IBM_output[[y]]$all_effort
     # Check if there are fewer quarters in the last set than usual 
-    if(y == 10) {
+    if(y == total_time_steps[variant]) {
       IBM_effort_list[[y]] <- Filter(length, IBM_effort_list[[y]])
       set_quarters <- length(IBM_effort_list[[y]])
     } else {
@@ -59,6 +56,33 @@ recreate_IBM_effort_list <- function(strategy_name,
 }
 
 # Test
+
+# Function to collate all IBM removals 
+create_observed_record <- function(strategy_name,
+                                   P,
+                                   D,
+                                   permutation_name,
+                                   variant) {
+  IBM_list <- list()
+  for(y in 1:total_time_steps[variant]) {
+    IBM_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant],
+                                 "/IBM_", permutation_name, "-var_",
+                                 variant,"-set_", y, ".rds"))
+    IBM_list <- c(IBM_list, IBM_output[[y]]$all_observed)
+    
+  }
+  # Remove empty list elements, if any 
+  IBM_list <- Filter(length, IBM_list)
+  # Constructing observed dataframe
+  IBM_observed <- melt(IBM_list, id.vars = colnames(IBM_output[[1]]$all_observed[[1]]))
+  colnames(IBM_observed)[9] <- "Quarter"
+  for(snake in 1:nrow(IBM_observed)) {
+    IBM_observed$size_category[snake] <- size_class_fun(IBM_observed$SVL[snake])
+  }
+  IBM_observed$size_category <- factor(IBM_observed$size_category,
+                                       levels = size_class_names)
+  return(IBM_observed)
+}
 
 
 # Function to recreate observation quarters based on condition and set
@@ -181,9 +205,8 @@ recreate_effort_conditions <- function(variant) {
   final_set <- total_time_steps[variant]
   #incomplete_variant_conditions <- list()
   #y <- total_time_steps[variant]
-  IBM_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], "/variant_",
-                               variant, "/IBM_results_start_pop_", permutation_name, "_variant-",
-                               variant,"_IBM_set-", final_set, ".rds"))
+  IBM_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant], 
+                               "/IBM_", permutation_name, "-var_", variant,"-set_", final_set, ".rds"))
   
   all_IBM_effort <- list()
   condition <- vector()
