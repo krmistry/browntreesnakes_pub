@@ -24,30 +24,26 @@ for(strat in 1:length(static_strategies)) {
 }
 
 
-# Run dynamic strategies using just for loops 
-# (will take a very long time to run, but won't overload memory)
-for(strat in 1:length(dynamic_strategies)) {
-  # Source strategy set up file
-  source(paste0(here("Scripts"),"/", setup_file_names[dynamic_strategies[strat]]))
-  strat_num <- strat + 1
-  # Set the maximum number of dynamic sets based on strategy (10 years)
-  final_time_step <- erad_quarter_time_step*10
-  #threshold_fun_name <- paste0("strat_", strat_num, "_threshold_fun")
-  # Run each permutation
-  for(p in 1:length(P_list)) {
-    for(d in 1:length(D_list)) {
-      for(variant in 1:num_variants) {
-        parallel_fun(P = p, 
-                     D = d, 
-                     final_time_step = final_time_step,
-                     variant = variant,
-                     threshold_fun = strat_threshold_fun,
-                     strategy_name = dynamic_strategies[strat],
-                     quarter_time_step = erad_quarter_time_step) 
-      }
-    }
-  }
-}
+# # Run dynamic strategies using just for loops
+# # (will take a very long time to run, but won't overload memory)
+# for(strat in 1:length(dynamic_strategies)) {
+#   # Source strategy set up file
+#   source(paste0(here("Scripts"),"/", setup_file_names[dynamic_strategies[strat]]))
+#   # Run each permutation
+#   for(p in 1:length(P_list)) {
+#     for(d in 1:length(D_list)) {
+#       for(variant in 1:num_variants) {
+#         parallel_fun(P = p,
+#                      D = d,
+#                      final_time_step = final_time_step,
+#                      variant = variant,
+#                      threshold_fun = strat_threshold_fun,
+#                      strategy_name = dynamic_strategies[strat],
+#                      quarter_time_step = erad_quarter_time_step)
+#       }
+#     }
+#   }
+# }
 
 # Starting with strategy 3, low, more small on loon
 
@@ -63,19 +59,28 @@ n_cores <- detectCores()
 cl <- makeCluster(n_cores/4, outfile = "")
 registerDoParallel(cl)
 
+# Set the folder to save results to (external harddive)
+save_folder <- "D:/BTS_pub"
+
+# On Loon, model runs:
+# - Strategy 3
+#   - (P = 1, D = 1)
+#   - (P = 1, D = 2)
+#   - (P = 2, D = 1)
+#   - (P = 2, D = 2)
+
+# Run for each strategy (actually only running 1 at a time, because of long run times and large output files)
 for(strat in 1:length(dynamic_strategies)) {
-  strat_num <- strat + 1
-  
   # Run each permutation
-  for(p in 1:length(P_list)) {
+  for(p in 2:length(P_list)) {
     for(d in 1:length(D_list)) {
       results <- foreach(variant = 1:num_variants)  %dopar% {
         library(here)
         source(here("Scripts/dynamic_strategy_parallel_function.R"))
         # Source strategy set up file
         source(paste0(here("Scripts"), "/", setup_file_names[dynamic_strategies[strat]]))
-        # Set the maximum number of dynamic sets based on strategy (10 years)
-        final_time_step <- erad_quarter_time_step*10
+        # Create object with results folder names, based on save_folder (and create those folders if they don't exist)
+        results_folders <- results_folder_fun(save_folder = save_folder)
         parallel_fun(P = p, 
                      D = d, 
                      final_time_step = final_time_step,
@@ -89,4 +94,12 @@ for(strat in 1:length(dynamic_strategies)) {
 }
 # Stop the cluster
 stopCluster(cl = cl)
+
+# For strategy 3, p = 1, d = 1, runs that may have had issues: 
+# - 47 - seems to have stopped after IBM 9, without finishing saving the final estimation round as it should
+# - 36 - same as 47, but after IBM 8
+# - 30 - same as above, after IBM 6
+# - 25 - same as above, after IBM 9
+# - 24 - after IBM 6
+# - 22 - after IBM 7
 
