@@ -61,6 +61,9 @@ registerDoParallel(cl)
 
 # Set the folder to save results to (external harddive)
 save_folder <- "D:/BTS_pub"
+#save_folder <- "E:/BTS_pub"
+# Create results folder list (also creates the actual folders if they don't exist yet)
+results_folders <- results_folder_fun(save_folder = save_folder)
 
 # On Loon, model runs:
 # - Strategy 3
@@ -68,6 +71,10 @@ save_folder <- "D:/BTS_pub"
 #   - (P = 1, D = 2)
 #   - (P = 2, D = 1)
 #   - (P = 2, D = 2)
+#   - (P = 3, D = 1)
+#   - (P = 3, D = 2)
+# - Strategy 4
+#   - (P = 1, D = 2)
 
 # Run for each strategy (actually only running 1 at a time, because of long run times and large output files)
 for(strat in 1:length(dynamic_strategies)) {

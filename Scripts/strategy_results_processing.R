@@ -3,7 +3,7 @@ library(reshape2)
 library(here)
 
 
-source(here("all_strategy_set_up.R"))
+source(here("Scripts/all_strategy_set_up.R"))
 source(here("Scripts/model_evaluation.R"))
 source(here("Scripts/results_processing_functions.R"))
 
@@ -39,7 +39,7 @@ types_of_results <- c("IBM", "Estimation", "Processed_results")
 # Create list of strategy set up file names
 strat_set_up_file <- c("strategy_1_set_up.R", 
                        "strategy_2_set_up.R", 
-                       "strategy_3_setup.R", 
+                       "strategy_3_set_up.R", 
                        "strategy_4_set_up.R")
 names(strat_set_up_file) <- strategies
 
@@ -81,11 +81,11 @@ names(strat_set_up_file) <- strategies
 
 
 # Strategy and permutations on loon on external harddrive My Passport, F:
-strategies_saved_here <- strategies[2]
+strategies_saved_here <- strategies[3]
 
 # Strategy :
 permutations <- list()
-permutations$Strategy_two <- list(c(P = 3, D = 2))
+permutations$Strategy_three <- list(c(P = 1, D = 1))
 
 
 for(strategy_name in strategies_saved_here) {
@@ -120,7 +120,7 @@ for(strategy_name in strategies_saved_here) {
       
       # Check how many time steps the variant went through (to see if population was eradicated)
       all_IBM_files <- list.files(paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant]))
-      set_IBM_files <- all_IBM_files[grep(paste0("IBM_"), all_IBM_files)]
+      set_IBM_files <- all_IBM_files[grep(paste0("IBM_", P, "_", D), all_IBM_files)]
       total_time_steps[variant] <- length(set_IBM_files)
       # Create all quarters from the original IBM outputs (since the all_quarters that 
       # I saved originally almost all had the wrong quarters assigned - future version should just 
