@@ -3,7 +3,7 @@ library(reshape2)
 library(here)
 
 
-source(here("all_strategy_set_up.R"))
+source(here("Scripts/all_strategy_set_up.R"))
 source(here("Scripts/model_evaluation.R"))
 source(here("Scripts/results_processing_functions.R"))
 
@@ -25,7 +25,7 @@ plot_labels$type_of_N <- c("small" = "Small",
 
 # Number of variants 
 num_variants <- 50
-estimation_sets_to_save <- list("Strategy_two" = c(1:5, 10, 15),
+estimation_sets_to_save <- list("Strategy_two" = c(1:5),
                                 "Strategy_three" = c(1:5),
                                 "Strategy_four" = c(1:5))
 
@@ -34,36 +34,36 @@ estimation_sets_to_save <- list("Strategy_two" = c(1:5, 10, 15),
 strategies <- paste0("Strategy_", c("one", "two", "three", "four"))
 types_of_results <- c("IBM", "Estimation", "Processed_results")
 #save_folder <- "D:/BTS_alt_strategies_results/"
-save_folder <- "F:/BTS_simulation/"
+#save_folder <- "F:/BTS_simulation/"
 
 # Create list of strategy set up file names
 strat_set_up_file <- c("strategy_1_set_up.R", 
                        "strategy_2_set_up.R", 
-                       "strategy_3_setup.R", 
+                       "strategy_3_set_up.R", 
                        "strategy_4_set_up.R")
 names(strat_set_up_file) <- strategies
 
 
-# Creating directory of folders (actually create the folders if they don't exist, 
-# otherwise just creating an indexed list of the names for file reading and saving)
-results_folders <- list()
-for(strategy in strategies) {
-  results_folders[[strategy]] <- list()
-  for(P in names(starting_pop)) {
-    results_folders[[strategy]][[P]] <- list()
-    for(D in names(starting_size_dist)) {
-      results_folders[[strategy]][[P]][[D]] <- vector()
-      permutation_name <- paste0(P, "_", D)
-      for(result in types_of_results) {
-        folder_name <- paste0(save_folder, strategy, "/", permutation_name, "/", result)
-        if(!dir.exists(folder_name)) {
-          dir.create(folder_name, recursive = TRUE)
-        }
-        results_folders[[strategy]][[P]][[D]][result] <- folder_name
-      }
-    }
-  }
-}
+# # Creating directory of folders (actually create the folders if they don't exist, 
+# # otherwise just creating an indexed list of the names for file reading and saving)
+# results_folders <- list()
+# for(strategy in strategies) {
+#   results_folders[[strategy]] <- list()
+#   for(P in names(starting_pop)) {
+#     results_folders[[strategy]][[P]] <- list()
+#     for(D in names(starting_size_dist)) {
+#       results_folders[[strategy]][[P]][[D]] <- vector()
+#       permutation_name <- paste0(P, "_", D)
+#       for(result in types_of_results) {
+#         folder_name <- paste0(save_folder, strategy, "/", permutation_name, "/", result)
+#         if(!dir.exists(folder_name)) {
+#           dir.create(folder_name, recursive = TRUE)
+#         }
+#         results_folders[[strategy]][[P]][[D]][result] <- folder_name
+#       }
+#     }
+#   }
+# }
 
 
 
@@ -81,20 +81,14 @@ for(strategy in strategies) {
 
 
 # Strategy and permutations on loon on external harddrive My Passport, F:
-strategies_saved_here <- strategies[2]
+strategies_saved_here <- strategies[3]
 
 # Strategy :
 permutations <- list()
-permutations$Strategy_two <- list(c(P = 3, D = 2))
+permutations$Strategy_three <- list(c(P = 1, D = 1))
 
 
 for(strategy_name in strategies_saved_here) {
-  # Set the maximum number of dynamic sets based on strategy
-  if(strategy_name == "Strategy_two") {
-    final_time_step <- 20
-  } else {
-    final_time_step <- 10
-  }
   # Source the strategy's set up file
   source(paste0(here("Scripts"), "/", strat_set_up_file[strategy_name]))
   # Isolating the methods & method days in the first quarter of each condition for the strategy
@@ -125,9 +119,8 @@ for(strategy_name in strategies_saved_here) {
       model_results$model_metrics <- list()
       
       # Check how many time steps the variant went through (to see if population was eradicated)
-      all_IBM_files <- list.files(paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], 
-                                         "/variant_", variant))
-      set_IBM_files <- all_IBM_files[grep(paste0("IBM_results_"), all_IBM_files)]
+      all_IBM_files <- list.files(paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant]))
+      set_IBM_files <- all_IBM_files[grep(paste0("IBM_", P, "_", D), all_IBM_files)]
       total_time_steps[variant] <- length(set_IBM_files)
       # Create all quarters from the original IBM outputs (since the all_quarters that 
       # I saved originally almost all had the wrong quarters assigned - future version should just 
@@ -145,10 +138,8 @@ for(strategy_name in strategies_saved_here) {
                                              variant)
       
       # If the effort_record exists, record that, otherwise reconstruct it if its not strategy 2 (strategy 2 has a different process below)
-      effort_record_file <- paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"],
-                                   "/variant_", variant, "/effort_record_start_pop_", 
-                                   permutation_name, "_variant-",
-                                   variant, ".rds")
+      effort_record_file <- paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant],
+                                   "/effort_record_", permutation_name, "-var_", variant, ".rds")
       if(file.exists(effort_record_file) == TRUE) {
         effort_record <- readRDS(effort_record_file)
         if(strategy_name != strategies[2]) {
@@ -196,9 +187,9 @@ for(strategy_name in strategies_saved_here) {
         obs_quarters <- obs_quarters[!is.na(obs_quarters)]
         
         # Read in jags results
-        jags_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]]["Estimation"],
-                                      "/output_jags_start_pop_", permutation_name,
-                                      "_variant-",variant, "_est_", set, ".RDS"))
+        jags_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]][["Estimation"]][variant],
+                                      "/jags_output_", permutation_name,
+                                      "-var_",variant, "-set_", set, ".RDS"))
         
         # Summarize encounter probability for this set
         variant_estimates[[variant]]$encounter[[set]] <- encounter_prob_results_fun(output_jags = jags_output,
