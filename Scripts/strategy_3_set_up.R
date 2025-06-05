@@ -3,7 +3,7 @@
 # # Number of quarters to generate - 10 years
 # erad_quarter_time_step <- 4
 
-# Methods for all evenatualities; starting, threshold 1, threshold 2 and threshold 3
+# Methods for for starting and threshold 1 conditions
 method_option_names <- c("initial", "threshold_1")
 method_options <- list()
 for(option in 1:length(method_option_names)) {
@@ -83,33 +83,6 @@ method_options$threshold_1$num_teams$visual <- 1
 method_options$initial$cost_num_teams$visual <- 2
 method_options$threshold_1$cost_num_teams$visual <- 2
 
-
-
-# Function to evaluate if threshold conditions are met
-strat_3_threshold_fun <- function(mean_N_df,
-                                  upper_3_threshold = 1,
-                                  area = area_size,
-                                  size_class = size_class_names) {
-  # Condition (default is initial)
-  condition <- "initial"
-  # Adding a column with density
-  mean_N_df$mean_density <- mean_N_df$N/area
-  # Identifying final time step (and the one right before)
-  last_quarters <- tail(sort(unique(mean_N_df$Quarter)),2)
-  # Separating final time step
-  last_quarter_means <- mean_N_df[mean_N_df$Quarter == last_quarters[2], ]
-  
-  ## Calculating mean densities 
-  # Upper 3 size classes combined
-  upper_3_mean_density <- sum(last_quarter_means$N[last_quarter_means$size_class != size_class[1]])/area
-  
-  ## Threshold 1: Estimated mean density is of upper size classes is <= 1 snake/ha combined 
-  if(upper_3_mean_density <= upper_3_threshold) {
-    condition <- "threshold_1"
-  }  
-  
-  return(condition)
-}
 
 
 

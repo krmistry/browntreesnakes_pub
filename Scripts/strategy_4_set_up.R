@@ -4,7 +4,7 @@
 # # Number of quarters to generate between estimation rounds - 1 year at a time
 # erad_quarter_time_step <- 4
 
-# Methods for all evenatualities; starting, threshold 1, threshold 2 and threshold 3
+# Methods for starting and threshold 1
 method_option_names <- c("initial", "threshold_1")
 method_options <- list()
 for(option in 1:length(method_option_names)) {
@@ -97,32 +97,3 @@ method_options$initial$cost_num_teams$bait_tube <- 1
 method_options$threshold_1$cost_num_teams$visual <- 3
 
 
-
-
-## Function setting threshold to turn ADS on and off (if x-large snakes reach 0, turn off, 
-## otherwise keep on)
-strat_4_threshold_fun <- function(mean_N_df,
-                                  xlarge_density = 0,
-                                  area = area_size,
-                                  size_class = size_class_names) {
-  # Condition (default is initial)
-  condition <- "initial"
-  # Adding a column with density
-  mean_N_df$mean_density <- mean_N_df$N/area
-  # Identifying final time step 
-  last_quarter <- tail(sort(unique(mean_N_df$Quarter)),1)
-  # Separating final time step
-  last_quarter_means <- mean_N_df[mean_N_df$Quarter == last_quarter, ]
-  
-  ## Calculating mean densities 
-  # X-large size class
-  xlarge_mean_density <- last_quarter_means$N[last_quarter_means$size_class == size_class[4]]/area
-  
-  
-  ## Threshold 1: Estimated mean density is of x-large size class is <=0.01 snake/ha 
-  if(xlarge_mean_density <= xlarge_density) {
-    condition <- "threshold_1"
-  } 
-  
-  return(condition)
-}
