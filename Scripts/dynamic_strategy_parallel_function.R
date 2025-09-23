@@ -209,4 +209,46 @@ parallel_fun <- function(P,
 # 
 
 
+# Function to check if a model run was interrupted, and if so, complete the run
+check_run_completion_fun <- function(P, 
+                                     D, 
+                                     strategy_name,
+                                     variant) {
+  P_name <- names(starting_pop)[P]
+  D_name <- names(starting_size_dist)[D]
+  # Import file names of all results in variant's IBM folder
+  all_IBM_files <- list.files(paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant]))
+  # If the effort record file exists, then the run was completed, and 
+  if(length(grep("effort_record", all_IBM_files)) == 1) {
+    run_status <- "complete"
+  } else { # If there is no effort record, check how many individuals are in the last quarter of the last IBM file
+    set_IBM_files <- all_IBM_files[grep(paste0("IBM_", names(starting_density)[P]), all_IBM_files)]
+    # If all 10 sets ran, check to see if the final set went to 40 quarters (if so, its complete)
+    if(length(set_IBM_files) == 10) {
+      last_IBM_set <- readRDS(paste0(results_folders[[strategy_name]][[P_name]][[D_name]]$IBM[variant], "/",
+                                 set_IBM_files[grep("set_10", set_IBM_files)]))
+      if(max(last_IBM_set[[10]]$all_quarters$Quarter) == 40) {
+        run_status <- "complete"
+      } else {
+        run_status <- "incomplete"
+      }
+    } else {
+      last_IBM_name <- sort(set_IBM_files)[length(set_IBM_files)]
+      last_IBM <- readRDS(paste0(results_folders[[strategy_name]][[P_name]][[D_name]]$IBM[variant], "/",
+                                 last_IBM_name))
+      final_set <- last_IBM[[length(last_IBM)]]
+      
+      indivs_in_last_Q <- nrow(final_set$all_quarters[which(final_set$all_quarters$Quarter == max(final_set$all_quarters$Quarter)),])
+      # If there is more than 1 individual in the final quarter, then the run is incomplete
+      if(indivs_in_last_Q > 1) {
+        run_status <- "incomplete"
+      } else {
+        run_status <- "complete"
+      }
+    }
+  }
+  return(run_status)
+}
+
+
 
