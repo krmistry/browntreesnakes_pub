@@ -6,22 +6,22 @@ source(here("Scripts/dynamic_strategy_functions.R"))
 source(here("Scripts/dynamic_strategy_parallel_function.R"))
 
 
-# # Temporarily changing number of variants for troubleshooting purposes
-# num_variants <- 1
-
-# Run static strategies
-for(strat in 1:length(static_strategies)) {
-  # Source strategy set up file
-  source(paste0(here("Scripts/"),setup_file_names[static_strategies[strat]]))
-  for(p in 1:length(P_list)) {
-    for(d in 1:length(D_list)) {
-      # Run IBM model for all variants, saves all outputs into appropriate results folder
-      static_fun(P = p,
-                 D = d,
-                 strategy_name = static_strategies[strat])
-    }
-  }
-}
+# # # Temporarily changing number of variants for troubleshooting purposes
+# # num_variants <- 1
+# 
+# # Run static strategies
+# for(strat in 1:length(static_strategies)) {
+#   # Source strategy set up file
+#   source(paste0(here("Scripts/"),setup_file_names[static_strategies[strat]]))
+#   for(p in 1:length(P_list)) {
+#     for(d in 1:length(D_list)) {
+#       # Run IBM model for all variants, saves all outputs into appropriate results folder
+#       static_fun(P = p,
+#                  D = d,
+#                  strategy_name = static_strategies[strat])
+#     }
+#   }
+# }
 
 
 # # Run dynamic strategies using just for loops
@@ -56,34 +56,53 @@ library(doParallel)
 # Detect the number of clusters available
 n_cores <- detectCores()
 # Select half of them - broke, so trying fewer cores
-cl <- makeCluster(n_cores/4, outfile = "")
+cl <- makeCluster(4, outfile = "")
 registerDoParallel(cl)
 
 # Set the folder to save results to (external harddive)
-save_folder <- "D:/BTS_pub"
+#save_folder <- "D:/BTS_pub"
 #save_folder <- "E:/BTS_pub"
+save_folder <- "F:/BTS_pub"
 # Create results folder list (also creates the actual folders if they don't exist yet)
 results_folders <- results_folder_fun(save_folder = save_folder)
 
 # On Loon, model runs:
 # - Strategy 3
-#   - (P = 1, D = 1)
+#   - (P = 1, D = 1) - check for incomplete runs
+#   - (P = 1, D = 2)
+#   - (P = 3, D = 1) 
+# - Strategy 4
+#   - (P = 1, D = 2) 
+#   - (P = 3, D = 1)
+
+# On Ursus:
+# - Strategy 4
+#   - (P = 2, D = 1) 
+#   - (P = 2, D = 2) 
+#   - (P = 3, D = 2)
+# - Strategy 3
+#   - (P = 2, D = 1)
+#   - (P = 2, D = 2)
+
+# On Delphine:
+# - Strategy 2
+#   - (P = 1, D = 1) 
 #   - (P = 1, D = 2)
 #   - (P = 2, D = 1)
 #   - (P = 2, D = 2)
-#   - (P = 3, D = 1)
-#   - (P = 3, D = 2)
-# - Strategy 4
-#   - (P = 1, D = 2)
+#   - (P = 3, D = 1) 
 
 # Run for each strategy (actually only running 1 at a time, because of long run times and large output files)
-for(strat in 1:length(dynamic_strategies)) {
-  # Run each permutation
-  for(p in 2:length(P_list)) {
-    for(d in 1:length(D_list)) {
-      results <- foreach(variant = 1:num_variants)  %dopar% {
+# for(strat in 1:length(dynamic_strategies)) {
+#   # Run each permutation
+#   for(p in 2:length(P_list)) {
+#     for(d in 1:length(D_list)) {
+      results <- foreach(variant = 13:num_variants)  %dopar% {
         library(here)
         source(here("Scripts/dynamic_strategy_parallel_function.R"))
+        strat <- 3
+        p <- 1
+        d <- 1
         # Source strategy set up file
         source(paste0(here("Scripts"), "/", setup_file_names[dynamic_strategies[strat]]))
         # Create object with results folder names, based on save_folder (and create those folders if they don't exist)
@@ -96,17 +115,45 @@ for(strat in 1:length(dynamic_strategies)) {
                      strategy_name = dynamic_strategies[strat],
                      quarter_time_step = erad_quarter_time_step)
       }
-    }
-  }
-}
+#     }
+#   }
+# }
 # Stop the cluster
 stopCluster(cl = cl)
 
-# For strategy 3, p = 1, d = 1, runs that may have had issues: 
-# - 47 - seems to have stopped after IBM 9, without finishing saving the final estimation round as it should
-# - 36 - same as 47, but after IBM 8
-# - 30 - same as above, after IBM 6
-# - 25 - same as above, after IBM 9
-# - 24 - after IBM 6
-# - 22 - after IBM 7
+
+
+# Check for and compile incomplete variant runs
+run_status <- vector()
+for(variant in 1:num_variants) {
+  run_status[variant] <- check_run_completion_fun(P = 1,
+                                                  D = 1,
+                                                  strategy_name = dynamic_strategies[2],
+                                                  variant = variant)
+  
+}
+incomplete_runs <- which(run_status == "incomplete")
+
+# Re-run incomplete variant runs (from beginning)
+#results <- foreach(variant = incomplete_runs)  %dopar% {
+  library(here)
+  source(here("Scripts/dynamic_strategy_parallel_function.R"))
+  strat <- 2
+  p <- 1
+  d <- 1
+  # Source strategy set up file
+  source(paste0(here("Scripts"), "/", setup_file_names[dynamic_strategies[strat]]))
+  # Create object with results folder names, based on save_folder (and create those folders if they don't exist)
+  results_folders <- results_folder_fun(save_folder = save_folder)
+  parallel_fun(P = p, 
+               D = d, 
+               final_time_step = final_time_step,
+               variant = variant,
+               threshold_fun = strat_threshold_fun,
+               strategy_name = dynamic_strategies[strat],
+               quarter_time_step = erad_quarter_time_step)
+#}
+
+# Stop the cluster
+stopCluster(cl = cl)
 

@@ -25,7 +25,7 @@ for(method in method_options$initial$methods) {
 
 # Threshold 1: no methods used in the first 2 quarters, visual in later 2 quarters
 method_options$threshold_1$erad_quarters <- list()
-method_options$threshold_1$erad_quarters$visual <- c(3:4)
+method_options$threshold_1$erad_quarters$visual <- c(1:erad_quarter_time_step)
 
 ## Days where eradication methods are used for each condition
 # Initial condition days
