@@ -7,6 +7,9 @@ source(here("Scripts/all_strategy_set_up.R"))
 source(here("Scripts/model_evaluation.R"))
 source(here("Scripts/results_processing_functions.R"))
 
+# Create results folder list (also creates the actual folders if they don't exist yet)
+results_folders <- results_folder_fun(save_folder = "F:/BTS_pub")
+
 # Plot labels 
 plot_labels <- list()
 plot_labels$size_class <- c("small" = "Small",
@@ -25,9 +28,9 @@ plot_labels$type_of_N <- c("small" = "Small",
 
 # Number of variants 
 num_variants <- 50
-estimation_sets_to_save <- list("Strategy_two" = c(1:5),
-                                "Strategy_three" = c(1:5),
-                                "Strategy_four" = c(1:5))
+estimation_sets_to_save <- list("Strategy_two" = c(1:10),
+                                "Strategy_three" = c(1:10),
+                                "Strategy_four" = c(1:10))
 
 
 # Checking for and creating if necessary all results folders
@@ -65,6 +68,19 @@ names(strat_set_up_file) <- strategies
 #   }
 # }
 
+variants_w_issues <- list()
+# # Strategy 2, low more small
+# variants_w_issues[[1]] <- c(1,3,47) - completed
+# ### Variants didn't get the final estimation round; run just that estimation
+
+# Strategy 2, medium more small
+# variants_w_issues[[2]] <- c(22) - completed
+### Estimation skipped a quarter somehow in the 8th year; re-run 
+# Strategy 3, low more x-large
+# variants_w_issues[[3]] <- c(13)
+### Estimation skipped a quarter somehow in the 7th year; re-run
+
+# Re-run the two variants above
 
 
 # # # Strategy and permutations on loon on external harddrive Seagate, D:
@@ -81,12 +97,19 @@ names(strat_set_up_file) <- strategies
 
 
 # Strategy and permutations on loon on external harddrive My Passport, F:
-strategies_saved_here <- strategies[3]
+strategies_saved_here <- strategies[c(2,3)]
 
 # Strategy :
 permutations <- list()
-permutations$Strategy_three <- list(c(P = 1, D = 1))
-
+for(strat in 1:length(strategies)) {
+  permutations[[strat]] <- list(c(P = 1, D = 1),
+                                c(P = 1, D = 2),
+                                c(P = 2, D = 1),
+                                c(P = 2, D = 2),
+                                c(P = 3, D = 1),
+                                c(P = 3, D = 2))
+}
+names(permutations) <- strategies
 
 for(strategy_name in strategies_saved_here) {
   # Source the strategy's set up file
@@ -109,7 +132,7 @@ for(strategy_name in strategies_saved_here) {
     variant_effort_records <- list()
     variant_data <- list()
     variant_estimates <- list()
-    for(variant in 1:num_variants) {
+    for(variant in all_variants) {
       variant_data[[variant]] <- list()
       variant_estimates[[variant]] <- list()
       variant_estimates[[variant]]$N <- list()
@@ -176,12 +199,10 @@ for(strategy_name in strategies_saved_here) {
                                                      permutation_name,
                                                      variant)
       
-      sets <- unlist(c(estimation_sets_to_save[strategy_name], 
-                       total_time_steps[variant]))
+      sets <- unlist(estimation_sets_to_save[[strategy_name]])
       sets <- sets[sets <= total_time_steps[variant]]
       
       for(set in sets) {
-        
         # Isolate observed quarters based on the current set
         obs_quarters <- all_obs_quarters[c(1:(set*erad_quarter_time_step))]
         obs_quarters <- obs_quarters[!is.na(obs_quarters)]

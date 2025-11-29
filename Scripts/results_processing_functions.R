@@ -40,7 +40,8 @@ recreate_IBM_effort_list <- function(strategy_name,
     IBM_effort_list[[y]] <- IBM_output[[y]]$all_effort
     # Check if there are fewer quarters in the last set than usual 
     if(y == total_time_steps[variant]) {
-      IBM_effort_list[[y]] <- Filter(length, IBM_effort_list[[y]])
+      
+      #IBM_effort_list[[y]] <- Filter(length, IBM_effort_list[[y]])
       set_quarters <- length(IBM_effort_list[[y]])
     } else {
       set_quarters <- erad_quarter_time_step

@@ -227,6 +227,7 @@ check_run_completion_fun <- function(P,
     if(length(set_IBM_files) == 10) {
       last_IBM_set <- readRDS(paste0(results_folders[[strategy_name]][[P_name]][[D_name]]$IBM[variant], "/",
                                  set_IBM_files[grep("set_10", set_IBM_files)]))
+
       if(max(last_IBM_set[[10]]$all_quarters$Quarter) == 40) {
         run_status <- "complete"
       } else {
@@ -249,6 +250,5 @@ check_run_completion_fun <- function(P,
   }
   return(run_status)
 }
-
 
 
