@@ -8,7 +8,8 @@ source(here("Scripts/model_evaluation.R"))
 source(here("Scripts/results_processing_functions.R"))
 
 # Create results folder list (also creates the actual folders if they don't exist yet)
-results_folders <- results_folder_fun(save_folder = "F:/BTS_pub")
+save_folder = "E:/BTS_pub"
+results_folders <- results_folder_fun(save_folder = "E:/BTS_pub")
 
 # Plot labels 
 plot_labels <- list()
@@ -46,6 +47,7 @@ strat_set_up_file <- c("strategy_1_set_up.R",
                        "strategy_4_set_up.R")
 names(strat_set_up_file) <- strategies
 
+all_variants <- c(1:50)
 
 # # Creating directory of folders (actually create the folders if they don't exist, 
 # # otherwise just creating an indexed list of the names for file reading and saving)
@@ -68,19 +70,7 @@ names(strat_set_up_file) <- strategies
 #   }
 # }
 
-variants_w_issues <- list()
-# # Strategy 2, low more small
-# variants_w_issues[[1]] <- c(1,3,47) - completed
-# ### Variants didn't get the final estimation round; run just that estimation
 
-# Strategy 2, medium more small
-# variants_w_issues[[2]] <- c(22) - completed
-### Estimation skipped a quarter somehow in the 8th year; re-run 
-# Strategy 3, low more x-large
-# variants_w_issues[[3]] <- c(13)
-### Estimation skipped a quarter somehow in the 7th year; re-run
-
-# Re-run the two variants above
 
 
 # # # Strategy and permutations on loon on external harddrive Seagate, D:
@@ -96,12 +86,12 @@ variants_w_issues <- list()
 #                                    c(P = 3, D = 2))
 
 
-# Strategy and permutations on loon on external harddrive My Passport, F:
-strategies_saved_here <- strategies[c(2,3)]
+# Strategies on this drive (all of them are on a harddrive)
+strategies_saved_here <- strategies[c(2:4)]
 
-# Strategy :
+# Permutations for each strategy on this drive (all of them):
 permutations <- list()
-for(strat in 1:length(strategies)) {
+for(strat in 1:length(strategies_saved_here)) {
   permutations[[strat]] <- list(c(P = 1, D = 1),
                                 c(P = 1, D = 2),
                                 c(P = 2, D = 1),
@@ -109,7 +99,7 @@ for(strat in 1:length(strategies)) {
                                 c(P = 3, D = 1),
                                 c(P = 3, D = 2))
 }
-names(permutations) <- strategies
+names(permutations) <- strategies_saved_here
 
 for(strategy_name in strategies_saved_here) {
   # Source the strategy's set up file
@@ -165,18 +155,18 @@ for(strategy_name in strategies_saved_here) {
                                    "/effort_record_", permutation_name, "-var_", variant, ".rds")
       if(file.exists(effort_record_file) == TRUE) {
         effort_record <- readRDS(effort_record_file)
-        if(strategy_name != strategies[2]) {
+        #if(strategy_name != strategies[2]) {
           variant_effort_records[[variant]] <- effort_record$condition
-        } else {
-          variant_effort_records[[variant]] <- "strategy two - incomplete"
-        }
+        # } else {
+        #   variant_effort_records[[variant]] <- "strategy two - incomplete"
+        # }
         
       } else {
-        if(strategy_name != strategies[2]) {
+        #if(strategy_name != strategies[2]) {
           variant_effort_records[[variant]] <- recreate_effort_conditions(variant)
-        } else {
-          variant_effort_records[[variant]] <- "strategy two - incomplete"
-        }
+        # } else {
+        #   variant_effort_records[[variant]] <- "strategy two - incomplete"
+        # }
       }
       # Check if the effort_record exists but has some NAs (its incomplete), and if so then recreate it
       # Again, if its strategy 2, then skip this, it'll be recreated at the end
@@ -267,7 +257,7 @@ for(strategy_name in strategies_saved_here) {
       # Save metrics
       saveRDS(variant_results, paste0(results_folders[[strategy_name]][[P]][[D]]["Processed_results"],
                                       "/variant-", variant, "_results.RDS"))
-      print(paste0("variant ", variant, " processed"))
+      print(paste0("variant ", variant, " of permutation ", permutation_name, strategy_name, " processed"))
     }
     
     permutation_results <- list()
@@ -283,6 +273,8 @@ for(strategy_name in strategies_saved_here) {
     permutation_results$total_suppress_prob <- total_suppression_obj_fun(variant_data)
     # Calculate the probability of reaching and maintaining upper 3 size class pop suppression goal (1 snake/ha)
     permutation_results$upper_3_suppress_prob <- upper_3_suppression_obj_fun(variant_data)
+    # Calculate the probability of reaching and maintaining x-large snakes per hectare suppression goal (0.1 snakes/ha)
+    permutation_results$xlarge_suppress_prob <- xlarge_suppression_obj_fun(variant_data)
     # Plotting data for all variants, for both N and density
     permutation_results$N_data_plot <- variant_data_plot_fun(variant_data,
                                                              type_of_y = "N")
@@ -294,58 +286,58 @@ for(strategy_name in strategies_saved_here) {
     # Plotting encounter probability from the final estimate for all variants
     permutation_results$encounter_prob_plot <- encounter_prob_plot(variant_estimates)
     
-    # For strategy 2, reconstructing the condition effort record is a longer process:
-    if(strategy_name == strategies[2]) {
-      incomplete_ind <- which(variant_effort_records == "strategy two - incomplete")
-      partial_effort_record <- list()
-      for(variant in incomplete_ind) {
-        partial_effort_record[[variant]] <- vector()
-        effort_record_file <- paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"],
-                                     "/variant_", variant, "/effort_record_start_pop_", 
-                                     permutation_name, "_variant-", variant, ".rds")
-        if(file.exists(effort_record_file) == TRUE) {
-          effort_record <- readRDS(effort_record_file)
-          if(length(effort_record$condition) > 0) {
-            # Isolate the missing sets
-            missing_ind <- which(is.na(effort_record$condition))
-          } else {
-            missing_ind <- c(1:total_time_steps[variant])
-          }
-        } else {
-          missing_ind <- c(1:total_time_steps[variant])
-        }
-        
-        
-        for(set in missing_ind) {
-          # the first condition is always initial, if that's missing
-          if(set == 1) {
-            partial_effort_record[[variant]][1] <- "initial"
-          } else if(set %in% (c(1:5, 10, 15)+1)){ 
-            # If the estimation results were saved for the set before the missing one, 
-            # then the condition can be recalculated from the estimation results
-            jags_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]]["Estimation"],
-                                          "/output_jags_start_pop_", permutation_name,
-                                          "_variant-",variant, "_est_", (set-1), ".RDS"))
-            final_quarter <- dim(jags_output$mean$N)[3]
-            estimate_summary <- estimate_N_summary(jags_output = jags_output)
-            partial_effort_record[[variant]][set] <- strat_2_threshold_fun(estimate_summary)
-          } else {
-            # If the estimation wasn't saved, then try recreating with the number of methods (works for some instances)
-            recreated_conditions <- recreate_effort_conditions(variant)
-            partial_effort_record[[variant]][set] <- recreated_conditions[set]
-          }
-        }
-        effort_record$condition[missing_ind] <- partial_effort_record[[variant]][missing_ind]
-        variant_effort_records[[variant]] <- effort_record$condition
-        print(paste0("variant ", variant, " condition reconstruction completed"))
-      }
-    }
+    # # For strategy 2, reconstructing the condition effort record is a longer process:
+    # if(strategy_name == strategies[2]) {
+    #   incomplete_ind <- which(variant_effort_records == "strategy two - incomplete")
+    #   partial_effort_record <- list()
+    #   for(variant in incomplete_ind) {
+    #     partial_effort_record[[variant]] <- vector()
+    #     effort_record_file <- paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"],
+    #                                  "/variant_", variant, "/effort_record_start_pop_", 
+    #                                  permutation_name, "_variant-", variant, ".rds")
+    #     if(file.exists(effort_record_file) == TRUE) {
+    #       effort_record <- readRDS(effort_record_file)
+    #       if(length(effort_record$condition) > 0) {
+    #         # Isolate the missing sets
+    #         missing_ind <- which(is.na(effort_record$condition))
+    #       } else {
+    #         missing_ind <- c(1:total_time_steps[variant])
+    #       }
+    #     } else {
+    #       missing_ind <- c(1:total_time_steps[variant])
+    #     }
+    #     
+    #     
+    #     for(set in missing_ind) {
+    #       # the first condition is always initial, if that's missing
+    #       if(set == 1) {
+    #         partial_effort_record[[variant]][1] <- "initial"
+    #       } else if(set %in% (c(1:5, 10, 15)+1)){ 
+    #         # If the estimation results were saved for the set before the missing one, 
+    #         # then the condition can be recalculated from the estimation results
+    #         jags_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]]["Estimation"],
+    #                                       "/output_jags_start_pop_", permutation_name,
+    #                                       "_variant-",variant, "_est_", (set-1), ".RDS"))
+    #         final_quarter <- dim(jags_output$mean$N)[3]
+    #         estimate_summary <- estimate_N_summary(jags_output = jags_output)
+    #         partial_effort_record[[variant]][set] <- strat_2_threshold_fun(estimate_summary)
+    #       } else {
+    #         # If the estimation wasn't saved, then try recreating with the number of methods (works for some instances)
+    #         recreated_conditions <- recreate_effort_conditions(variant)
+    #         partial_effort_record[[variant]][set] <- recreated_conditions[set]
+    #       }
+    #     }
+    #     effort_record$condition[missing_ind] <- partial_effort_record[[variant]][missing_ind]
+    #     variant_effort_records[[variant]] <- effort_record$condition
+    #     print(paste0("variant ", variant, " condition reconstruction completed"))
+    #   }
+    # }
     
     # Plotting method conditions across variants
     permutation_results$condition_plot <- condition_record_plot_fun(variant_effort_records)
     
     # Save plots & summarized data sets
-    saveRDS(permutation_results, paste0(results_folders[[strategy_name]][[P]][[D]]["Processed_results"],
+    saveRDS(permutation_results, paste0(save_folder, "/", strategy_name, "/Permutation_results",
                                         "/permutation-", permutation_name, "_results.RDS"))
     
     
@@ -356,12 +348,8 @@ for(strategy_name in strategies_saved_here) {
 ## Creating observed record for all variants and permutations
 strategy_observed <- list()
 for(strategy_name in strategies_saved_here) {
-  # Set the maximum number of dynamic sets based on strategy
-  if(strategy_name == "Strategy_two") {
-    final_time_step <- 20
-  } else {
+  # Set the maximum number of dynamic sets
     final_time_step <- 10
-  }
   # Source the strategy's set up file
   source(paste0(here("Scripts"), "/", strat_set_up_file[strategy_name]))
   permutation_observed <- list()
@@ -376,9 +364,8 @@ for(strategy_name in strategies_saved_here) {
     for(variant in 1:num_variants) {
       
       # Check how many time steps the variant went through (to see if population was eradicated)
-      all_IBM_files <- list.files(paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], 
-                                         "/variant_", variant))
-      set_IBM_files <- all_IBM_files[grep(paste0("IBM_results_"), all_IBM_files)]
+      all_IBM_files <- list.files(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant])
+      set_IBM_files <- all_IBM_files[grep(paste0("IBM_", P,"_",D), all_IBM_files)]
       total_time_steps[variant] <- length(set_IBM_files)
       
       # Create record of all observed snakes (snakes removed by visual or trap)
@@ -397,6 +384,6 @@ for(strategy_name in strategies_saved_here) {
   colnames(strategy_observed[[strategy_name]])[12] <- "permutation"
 }
 
-saveRDS(strategy_observed, file = paste0(save_folder, "observed/loon_observed.RDS"))
+saveRDS(strategy_observed, file = paste0(results_folders[[strategy_name]][[P]][[D]][["Processed_results"]], "all_observed_indivs.RDS"))
 
 

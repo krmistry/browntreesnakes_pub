@@ -35,9 +35,10 @@ static_fun <- function(P,
                                      type_of_run = "initial",
                                      num_teams = num_teams)
     # Save each IBM results for each variant
-    saveRDS(replicates, file = paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"], "/IBM_", 
+    saveRDS(replicates, file = paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant], "/IBM_", 
                                       names(starting_pop)[P], "_", names(starting_size_dist)[D], 
                                       "-var_", variant, ".rds"))
-    print(paste0("variant ", variant, " completed"))
+    print(paste0("variant ", variant, " ", names(starting_density)[P], " ",
+                names(starting_size_dist)[D],  " completed"))
   }
 }

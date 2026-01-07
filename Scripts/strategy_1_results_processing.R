@@ -27,37 +27,23 @@ plot_labels$type_of_N <- c("small" = "Small",
 # Checking for and creating if necessary all results folders
 strategies <- paste0("Strategy_", c("one", "two", "three", "four"))
 types_of_results <- c("IBM", "Estimation", "Processed_results")
-save_folder <- paste0(here("Results/alt_strategies"), "/")
 
 
 # Creating directory of folders (actually create the folders if they don't exist, 
 # otherwise just creating an indexed list of the names for file reading and saving)
-results_folders <- list()
-for(strategy in strategies) {
-  results_folders[[strategy]] <- list()
-  for(P in names(starting_pop)) {
-    results_folders[[strategy]][[P]] <- list()
-    for(D in names(starting_size_dist)) {
-      results_folders[[strategy]][[P]][[D]] <- vector()
-      permutation_name <- paste0(P, "_", D)
-      for(result in types_of_results) {
-        folder_name <- paste0(save_folder, strategy, "/", permutation_name, "/", result)
-        if(!dir.exists(folder_name)) {
-          dir.create(folder_name, recursive = TRUE)
-        }
-        results_folders[[strategy]][[P]][[D]][result] <- folder_name
-      }
-    }
-  }
-}
-
+save_folder = "E:/BTS_pub"
+results_folders <- results_folder_fun(save_folder = "E:/BTS_pub")
 
 strategy_name <- strategies[1]
 source(here("Scripts/strategy_1_set_up.R"))
 num_variants <- 50
 # Permutations that are on this computer (boiga)
 permutations <- list(c(P = 1, D = 1),
-                     c(P = 1, D = 2))
+                     c(P = 1, D = 2),
+                     c(P = 2, D = 1),
+                     c(P = 2, D = 2),
+                     c(P = 3, D = 1),
+                     c(P = 3, D = 2))
 
 for(permutation in permutations) {
   # Process results for a strategy's single permutation 
@@ -69,14 +55,14 @@ for(permutation in permutations) {
   variant_data <- list()
   for(variant in 1:num_variants) {
     variant_data[[variant]] <- list()
-    IBM_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]]["IBM"],  
-                                 "/IBM_start_pop_", permutation_name, "-var_",
+    IBM_output <- readRDS(paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][[variant]],  
+                                 "/IBM_", permutation_name, "-var_",
                                  variant, ".rds"))
-    if(permutation["P"] == 2 & permutation["D"] == 1) {
-      IBM_output <- IBM_output
-    } else {
-      IBM_output <- IBM_output[[1]]
-    }
+    # if(permutation["P"] == 2 & permutation["D"] == 1) {
+    #   IBM_output <- IBM_output
+    # } else {
+    #   IBM_output <- IBM_output[[1]]
+    # }
     # Calculate how many quarters the variant ran (capping it at 10 years, i.e. 40 quarters)
     IBM_all_quarters <- IBM_output$all_quarters
     total_quarters[variant] <- min(max(IBM_all_quarters$Quarter), 40)
@@ -122,13 +108,15 @@ for(permutation in permutations) {
   permutation_results$total_suppress_prob <- total_suppression_obj_fun(variant_data)
   # Calculate the probability of reaching and maintaining upper 3 size class pop suppression goal (1 snake/ha)
   permutation_results$upper_3_suppress_prob <- upper_3_suppression_obj_fun(variant_data)
+  # Calculate the probability of reaching and maintaining x-large snakes per hectare suppression goal (0.1 snakes/ha)
+  permutation_results$xlarge_suppress_prob <- xlarge_suppression_obj_fun(variant_data)
   # Plotting data for all variants, for both N and density
   permutation_results$N_data_plot <- variant_data_plot_fun(variant_data,
                                                            type_of_y = "N")
   permutation_results$density_data_plot <- variant_data_plot_fun(variant_data, 
                                                                  type_of_y = "density")
   # Save plots & summarized data sets
-  saveRDS(permutation_results, paste0(results_folders[[strategy_name]][[P]][[D]]["Processed_results"],
+  saveRDS(permutation_results, paste0(save_folder, "/", strategy_name, "/Permutation_results",
                                       "/permutation-", permutation_name, "_results.RDS"))
   
   print(paste0("permutation ", permutation_name, " processed"))

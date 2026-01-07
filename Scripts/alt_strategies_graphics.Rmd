@@ -20,7 +20,7 @@ library(vctrs)
 source(here("Scripts/00_user_inputs.R"))
 
 # Setting folder to save plots to
-save_folder <- paste0(here("Results/alt_strategies/Manuscript_plots"), "/")
+save_folder <- paste0(here("Results/Manuscript_plots"), "/")
 
 strategies <- paste0("strategy_", 1:4)
 num_strategies <- length(strategies)
@@ -59,7 +59,7 @@ names(colors$methods) <- erad_methods
 
 strategy_effort_plots <- list()
 for(strategy in strategies) {
-  source(paste0(here("Scripts/"), strategy, "_set_up.R"))
+  source(paste0(here("Scripts"), "/", strategy, "_set_up.R"))
   #method_options <- strategy_methods[[strategy]]
   strategy_effort_plots[[strategy]] <- list()
   for(condition in 1:length(method_options)) {
