@@ -253,17 +253,13 @@ condition_record_plot_fun <- function(variant_effort_records,
   all_effort_df$variant <- "variant_1"
   # Add each variant's condition list and corresponding set to the dataframe
   for(variant in 2:n) {
-    effort_df <- cbind(melt(variant_effort_records[[variant]]), c(1:total_time_steps[variant]))
+    effort_df <- cbind(melt(variant_effort_records[[variant]]), c(1:length(variant_effort_records[[variant]])))
     colnames(effort_df) <- c("condition", "set")
     effort_df$variant <- paste0("variant_", variant)
     all_effort_df <- bind_rows(all_effort_df, effort_df)
   }
   # Set up y axis based on strategy
-  if(strategy == "Strategy_two") {
-    y_breaks <- seq(2, 20, 2)
-  } else {
     y_breaks <- c(1:10)
-  }
   # Plot condition record for all variants
   condition_record_plot <- ggplot(all_effort_df) +
     geom_bar(aes(y = set, fill = condition)) +
@@ -487,6 +483,47 @@ upper_3_suppression_obj_fun <- function(variant_data,
 
 # Test
 # upper_3_suppression_obj_fun(variant_data)
+
+## Function to evaluate the probability of reaching the X-large size class 
+## suppression objective (<= 0.1 snakes per ha)
+
+xlarge_suppression_obj_fun <- function(variant_data,
+                                        xlarge_obj = 1) {
+  xlarge_suppressed <- vector()
+  suppression_reached <- vector()
+  for(variant in 1:length(variant_data)) {
+    xlarge_density <- variant_data[[variant]]$density$xlarge
+    below_total_obj <- vector()
+    for(quarter in 1:length(xlarge_density)) {
+      if(xlarge_density[quarter] <= xlarge_obj) {
+        below_total_obj[quarter] <- 1
+      } else {
+        below_total_obj[quarter] <- 0
+      }
+    }
+    if(sum(below_total_obj) > 0) {
+      # Record the quarter when the total population first goes below the objective
+      suppression_reached[variant] <- min(which(below_total_obj == 1))
+      # Check to see if it is below for at least the final year, and count it as 
+      # successfully suppressed if so
+      last_year <- tail(below_total_obj, 4)
+      if(sum(last_year) == 4) {
+        xlarge_suppressed[variant] <- 1
+      } else {
+        xlarge_suppressed[variant] <- 0
+      }
+    } else {
+      xlarge_suppressed[variant] <- 0
+      suppression_reached[variant] <- NA
+    }
+  }
+  variants_suppressed <- which(xlarge_suppressed == 1)
+  suppression_prob <- sum(xlarge_suppressed)/length(variant_data)
+  
+  return(list(suppession_prob = suppression_prob,
+              suppression_maintained = variants_suppressed,
+              suppression_reached = suppression_reached))
+}
 
 
 # Function to separate (and sum when appropriate) estimated encounter probability values - mean and credible intervals for 95th percentile
