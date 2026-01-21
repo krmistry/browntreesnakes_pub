@@ -335,6 +335,8 @@ for(strategy_name in strategies_saved_here) {
     
     # Plotting method conditions across variants
     permutation_results$condition_plot <- condition_record_plot_fun(variant_effort_records)
+    # Saving vector of method conditions for entire set
+    permutation_results$condition_record <- variant_effort_records
     
     # Save plots & summarized data sets
     saveRDS(permutation_results, paste0(save_folder, "/", strategy_name, "/Permutation_results",
@@ -343,6 +345,47 @@ for(strategy_name in strategies_saved_here) {
     
   }
 }
+
+# for(strategy_name in strategies_saved_here) {
+#   for(permutation in permutations[[strategy_name]]) {
+#     P <- names(starting_pop)[permutation["P"]]
+#     D <- names(starting_size_dist)[permutation["D"]]
+#     permutation_name <- paste0(P, "_", D)
+#     
+#     permutation_results <- readRDS(paste0(save_folder, "/", strategy_name, "/Permutation_results",
+#                                           "/permutation-", permutation_name, "_results.RDS"))
+#     variant_effort_records <- list()
+#     total_time_steps <- vector()
+#     for(variant in all_variants) {
+#       all_IBM_files <- list.files(paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant]))
+#       set_IBM_files <- all_IBM_files[grep(paste0("IBM_", P, "_", D), all_IBM_files)]
+#       total_time_steps[variant] <- length(set_IBM_files)
+#       
+#       effort_record_file <- paste0(results_folders[[strategy_name]][[P]][[D]][["IBM"]][variant],
+#                                    "/effort_record_", permutation_name, "-var_", variant, ".rds")
+#       if(file.exists(effort_record_file) == TRUE) {
+#         effort_record <- readRDS(effort_record_file)
+#         #if(strategy_name != strategies[2]) {
+#         variant_effort_records[[variant]] <- effort_record$condition
+#         # } else {
+#         #   variant_effort_records[[variant]] <- "strategy two - incomplete"
+#         # }
+#         
+#       } else {
+#         #if(strategy_name != strategies[2]) {
+#         variant_effort_records[[variant]] <- recreate_effort_conditions(variant)
+#         # } else {
+#         #   variant_effort_records[[variant]] <- "strategy two - incomplete"
+#         # }
+#       }
+#     }
+#     
+#     permutation_results$condition_record <- variant_effort_records
+#     
+#     saveRDS(permutation_results, paste0(save_folder, "/", strategy_name, "/Permutation_results",
+#                                         "/permutation-", permutation_name, "_results.RDS"))
+#   }
+# }
 
 
 ## Creating observed record for all variants and permutations
