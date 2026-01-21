@@ -55,7 +55,7 @@ dynamic_strategy_cost_calc <- function(permutation_results,
   for(variant in 1:n) {
     variant_cost[[variant]] <- list()
     var_name <- paste0("variant_", variant)
-    condition_df <- permutation_results$condition_plot$condition_record
+    condition_df <- permutation_results$condition_plot$data
     # Isolate the variants' conditions for each set
     variant_conditions <- condition_df$condition[condition_df$variant == var_name]
     set_costs <- list()

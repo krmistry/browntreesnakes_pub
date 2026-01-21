@@ -3,11 +3,13 @@
 library(reshape2)
 library(here)
 library(tidyr)
+library(stringr)
 
 source(here("Scripts/all_strategy_set_up.R"))
 source(here("Scripts/model_evaluation.R"))
 source(here("Scripts/results_processing_functions.R"))
 source(here("Scripts/alt_strategies_cost_calc.R"))
+source(here("Scripts/strategy_1_set_up.R"))
 source(here("Scripts/strategy_2_set_up.R"))
 source(here("Scripts/strategy_3_set_up.R"))
 source(here("Scripts/strategy_4_set_up.R"))
@@ -61,7 +63,7 @@ plot_colors$permutation <- hue_pal()(length(permutations))
 names(plot_colors$permutation) <- permutations
 
 # Checking for and creating if necessary all results folders
-save_folder <- paste0(here("Results", "alt_strategies", "Manuscript_plots"), "/")
+save_folder <- paste0(here("Results", "Manuscript_plots"), "/")
 
 #### Analyzing results by permutation & strategy ####
 
@@ -77,16 +79,16 @@ for(permutation_name in permutations) {
   permutation_costs[[permutation_name]] <- list()
   objectives_probs[[permutation_name]] <- as.data.frame(matrix(NA,
                                                           nrow = length(strategies),
-                                                          ncol = 7))
+                                                          ncol = 9))
   colnames(objectives_probs[[permutation_name]]) <- c("strategy", "erad_prob", "mean_erad_quarter",
                                                  "total_suppress_prob", "mean_total_quarter",  "upper_3_suppress_prob",
-                                                 "mean_upper_3_quarter")
+                                                 "mean_upper_3_quarter", "xlarge_suppress_prob", "mean_xlarge_quarter")
   row_counter <- 1
   for(strategy in strategies) {
     N_data_list[[permutation_name]][[strategy]] <- list()
     estimates_list[[permutation_name]][[strategy]] <- list()
     # Read in results for this permutation and strategy
-    permutation_results <- readRDS(paste0(here("Results", "alt_strategies", strategy, "permutation_results"),
+    permutation_results <- readRDS(paste0("E:/BTS_pub/", strategy, "/Permutation_results",
                                             "/permutation-", permutation_name, "_results.RDS"))
     # Assign N data 
     N_data_list[[permutation_name]][[strategy]] <- permutation_results$N_data_plot$data_all_variants
@@ -105,19 +107,21 @@ for(permutation_name in permutations) {
     objectives_probs[[permutation_name]]$mean_total_quarter[row_counter] <- mean(permutation_results$total_suppress_prob$suppression_reached[(!is.na(permutation_results$total_suppress_prob$suppression_reached))])
     objectives_probs[[permutation_name]]$upper_3_suppress_prob[row_counter] <- permutation_results$upper_3_suppress_prob$suppession_prob
     objectives_probs[[permutation_name]]$mean_upper_3_quarter[row_counter] <- mean(permutation_results$upper_3_suppress_prob$suppression_reached[(!is.na(permutation_results$upper_3_suppress_prob$suppression_reached))])
-
+    objectives_probs[[permutation_name]]$xlarge_suppress_prob[row_counter] <- permutation_results$xlarge_suppress_prob$suppession_prob
+    objectives_probs[[permutation_name]]$mean_xlarge_quarter[row_counter] <- mean(permutation_results$xlarge_suppress_prob$suppression_reached[(!is.na(permutation_results$upper_3_suppress_prob$suppression_reached))])
 
     # Processing and saving permutation costs (for dynamic strategies, so all but strategy one)
-    if(strategy %in% strategies[c(3:4)]) {
+    if(strategy %in% strategies[c(2:4)]) {
       permutation_costs[[permutation_name]][[strategy]] <- dynamic_strategy_cost_calc(permutation_results,
                                                     strategy_condition_costs,
                                                     strategy = strategy)
     } else if (strategy == strategies[1]) {
       permutation_costs[[permutation_name]][[strategy]] <- strategy_condition_costs[[strategy]]$initial
-    } else {
-      permutation_costs[[permutation_name]][[strategy]] <- strat_2_dynamic_strategy_cost_calc(permutation_results,
-                                                                                              strategy_condition_costs)
     }
+    # } else {
+    #   permutation_costs[[permutation_name]][[strategy]] <- strat_2_dynamic_strategy_cost_calc(permutation_results,
+    #                                                                                           strategy_condition_costs)
+    # }
       
     row_counter <- row_counter + 1
   }
@@ -199,7 +203,7 @@ for(pop_type in unique(all_data$size_class)) {
 
 ##### Objectives performance #####
 all_objs_probs <- melt(objectives_probs, id.vars = colnames(objectives_probs[[1]]))
-colnames(all_objs_probs)[8] <- "permutation"
+colnames(all_objs_probs)[10] <- "permutation"
 
 all_objs_probs$permutation <- factor(all_objs_probs$permutation, levels = c("low_more_small",
                                                                             "medium_more_small",
@@ -332,7 +336,7 @@ for(permutation in permutations) {
     data <- all_data[which(all_data$variant == variant & 
                              all_data$permutation == permutation & 
                              all_data$Strategy == strategies[2]),]
-    true_conditions$Strategy_two[[permutation]][[paste0("variant_", variant)]] <- strat_2_IBM_threshold_fun(data)
+    true_conditions$Strategy_two[[permutation]][[paste0("variant_", variant)]] <- IBM_threshold_fun(data)
   }
 }
 
